@@ -57,6 +57,6 @@ backend/prisma/*.db-wal
 .turbo
 
 # lock files (可选，保留一个即可)
-# pnpm-lock.yaml
-# yarn.lock
-# package-lock.json
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
