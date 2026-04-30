@@ -1,0 +1,143 @@
+// Prisma Schema for NetOps Agent Skills
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Agent 模型
+// ============================================================
+
+model Agent {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  systemPrompt  String
+  modelConfig   String   @default("{\"model\":\"deepseek-chat\"}")
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // 关联
+  skills        AgentSkill[]
+  conversations Conversation[]
+
+  @@map("agents")
+}
+
+// ============================================================
+// Skill 模型
+// ============================================================
+
+model Skill {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  version        String
+  description    String
+  author         String
+  tags           String   @default("[]") // JSON array
+  tools          String   @default("[]") // JSON array
+  configurations String   @default("[]") // JSON array
+  icon           String?
+  enabled        Boolean  @default(true)
+  builtIn        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // 关联
+  agentSkills    AgentSkill[]
+
+  @@map("skills")
+}
+
+// ============================================================
+// Agent-Skill 关联表
+// ============================================================
+
+model AgentSkill {
+  id            String   @id @default(cuid())
+  agentId       String
+  skillId       String
+  enabled       Boolean  @default(true)
+  customParams  String?  @default("{}") // JSON object
+  createdAt     DateTime @default(now())
+
+  // 关联
+  agent         Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  skill         Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, skillId])
+  @@map("agent_skills")
+}
+
+// ============================================================
+// 对话会话
+// ============================================================
+
+model Conversation {
+  id        String   @id @default(cuid())
+  agentId   String
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // 关联
+  agent     Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  messages  Message[]
+
+  @@map("conversations")
+}
+
+// ============================================================
+// 消息记录
+// ============================================================
+
+model Message {
+  id          String   @id @default(cuid())
+  conversationId String
+  role        String   // user | assistant | system | tool
+  content     String
+  toolCalls   String?  @default("[]") // JSON array
+  toolCallId  String?
+  createdAt   DateTime @default(now())
+
+  // 关联
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// ============================================================
+// 系统配置
+// ============================================================
+
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_configs")
+}
+
+// ============================================================
+// 操作日志
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  resource   String
+  resourceId String?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
