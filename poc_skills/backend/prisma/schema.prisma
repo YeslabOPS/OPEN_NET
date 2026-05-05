@@ -26,6 +26,10 @@ model Agent {
   // 关联
   skills        AgentSkill[]
   conversations Conversation[]
+  // OP01: 反向关联 - 巡检记录
+  inspectionRecords  InspectionRecord[]
+  // OP01: 反向关联 - 定时任务
+  inspectionSchedules InspectionSchedule[]
 
   @@map("agents")
 }
@@ -140,4 +144,109 @@ model AuditLog {
 
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================
+// 智能运维 - 巡检模板 (OP02)
+// ============================================================
+
+model InspectionTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  deviceType  String   // switch | router | firewall | generic
+  commands    String   @default("[]") // JSON array: 巡检命令列表
+  devices     String   @default("[]") // JSON array: 预设设备列表
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 关联
+  schedules   InspectionSchedule[]
+  records     InspectionRecord[]
+  baselines   BaselineDocument[]
+
+  @@map("inspection_templates")
+}
+
+// ============================================================
+// 智能运维 - 巡检记录 (OP03)
+// ============================================================
+
+model InspectionRecord {
+  id          String   @id @default(cuid())
+  templateId  String?
+  agentId     String
+  status      String   @default("running") // running | success | failed
+  devices     String   @default("[]")       // JSON array: 本次巡检的设备列表
+  results     String?  @default("{}")       // JSON object: 巡检原始结果
+  reportPath  String?                       // 结构化 Markdown 报告文件路径
+  startTime   DateTime @default(now())
+  endTime     DateTime?
+  summary     String?  @default("{}")      // JSON object: Agent 分析摘要
+
+  template    InspectionTemplate?  @relation(fields: [templateId], references: [id])
+  agent       Agent                @relation(fields: [agentId], references: [id])
+  notifications Notification[]
+
+  @@index([status])
+  @@index([startTime])
+  @@map("inspection_records")
+}
+
+// ============================================================
+// 智能运维 - 定时巡检任务 (OP04)
+// ============================================================
+
+model InspectionSchedule {
+  id             String   @id @default(cuid())
+  templateId     String
+  agentId        String
+  cronExpression String   // cron 表达式，如 "0 9 * * 1-5" (工作日9点)
+  enabled        Boolean  @default(true)
+  lastRunTime    DateTime?
+  lastRunStatus  String?  // success | failed
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  template       InspectionTemplate @relation(fields: [templateId], references: [id])
+  agent          Agent              @relation(fields: [agentId], references: [id])
+
+  @@map("inspection_schedules")
+}
+
+// ============================================================
+// 智能运维 - 通知 (OP05)
+// ============================================================
+
+model Notification {
+  id               String   @id @default(cuid())
+  userId           String?  // 预留多用户，当前为 null 表示全员
+  title            String
+  content          String   // 通知正文 / Agent 分析结果
+  type             String   // inspection | report | baseline | system
+  relatedRecordId  String?  // 关联的 InspectionRecord.id
+  isRead           Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  record           InspectionRecord? @relation(fields: [relatedRecordId], references: [id])
+
+  @@index([isRead, createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// 智能运维 - 基线文档 (OP06)
+// ============================================================
+
+model BaselineDocument {
+  id          String   @id @default(cuid())
+  templateId  String
+  filePath    String   // 本地磁盘路径，如 data/baselines/{templateId}/baseline_v1.md
+  generatedAt DateTime @default(now())
+  version     Int      @default(1)
+  isActive    Boolean  @default(true)
+
+  template    InspectionTemplate @relation(fields: [templateId], references: [id])
+
+  @@map("baseline_documents")
 }

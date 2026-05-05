@@ -11,7 +11,7 @@ const CreateSkillSchema = z.object({
   description: z.string().min(1),
   author: z.string().min(1),
   tags: z.array(z.string()).optional(),
-  tools: z.array(z.string()).optional(),
+  tools: z.array(z.any()).optional(),
   configurations: z.array(z.any()).optional(),
   icon: z.string().optional(),
   enabled: z.boolean().optional(),

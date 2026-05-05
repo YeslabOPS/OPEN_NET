@@ -129,7 +129,9 @@ function SkillList() {
     }
 
     try {
-      const response = await fetch(`/api/skills/import/url?url=${encodeURIComponent(importUrl)}`);
+      const response = await fetch(`/api/skills/import/url?url=${encodeURIComponent(importUrl)}`, {
+        method: 'POST',
+      });
       const result = await response.json();
       if (result.success) {
         message.success('导入成功');

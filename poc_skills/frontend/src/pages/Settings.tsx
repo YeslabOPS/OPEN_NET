@@ -1,18 +1,85 @@
-import { Form, Input, Button, Card, Typography, Space, message, Divider } from 'antd';
+import { useState, useEffect } from 'react';
+import { Form, Input, Button, Card, Typography, Space, message, Divider, Spin } from 'antd';
 import { SaveOutlined, KeyOutlined, GlobalOutlined } from '@ant-design/icons';
+import { useConfigStore } from '../../stores/configStore';
 
 const { Title, Text } = Typography;
 
 function Settings() {
   const [form] = Form.useForm();
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const { updateConfig, config } = useConfigStore();
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/config');
+        const result = await response.json();
+        if (result.success && result.data) {
+          const configMap: Record<string, string> = {};
+          result.data.forEach((item: { key: string; value: string }) => {
+            configMap[item.key] = item.value;
+          });
+          form.setFieldsValue({
+            apiKey: configMap.api_key || config.apiKey || '',
+            apiBaseUrl: configMap.api_base_url || config.apiBaseUrl || 'https://api.deepseek.com',
+            defaultModel: configMap.default_model || config.defaultModel || 'deepseek-chat',
+          });
+        }
+      } catch (error) {
+        // 从本地 store 恢复
+        form.setFieldsValue({
+          apiKey: config.apiKey,
+          apiBaseUrl: config.apiBaseUrl,
+          defaultModel: config.defaultModel,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      setSaving(true);
+
+      // 保存到后端
+      const configs = [
+        { key: 'api_key', value: values.apiKey },
+        { key: 'api_base_url', value: values.apiBaseUrl },
+        { key: 'default_model', value: values.defaultModel },
+      ];
+
+      for (const cfg of configs) {
+        const response = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cfg),
+        });
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(`保存配置 ${cfg.key} 失败`);
+        }
+      }
+
+      // 同步更新本地 store
+      updateConfig({
+        apiKey: values.apiKey,
+        apiBaseUrl: values.apiBaseUrl,
+        defaultModel: values.defaultModel,
+      });
+
       message.success('配置已保存');
-      console.log('Saved config:', values);
-    } catch (error) {
-      console.error('Validation failed:', error);
+    } catch (error: any) {
+      if (error.errorFields) {
+        return;
+      }
+      message.error(error.message || '保存配置失败');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -21,6 +88,7 @@ function Settings() {
       <Title level={3}>系统配置</Title>
 
       <Card style={{ marginTop: 16 }} title="API 配置">
+        <Spin spinning={loading}>
         <Form
           form={form}
           layout="vertical"
@@ -68,11 +136,12 @@ function Settings() {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" icon={<SaveOutlined />} onClick={handleSave}>
+            <Button type="primary" icon={<SaveOutlined />} onClick={handleSave} loading={saving}>
               保存配置
             </Button>
           </Form.Item>
         </Form>
+        </Spin>
       </Card>
 
       <Card style={{ marginTop: 16 }} title="关于">
