@@ -323,73 +323,73 @@ frontend/
 
 ### 数据库建模
 
-- [ ] OP01 - 设计 InspectionTemplate 模型（id, name, description, deviceType, commands[JSON], devices[JSON], createdAt, updatedAt）
-- [ ] OP02 - 设计 InspectionRecord 模型（id, templateId, agentId, status[running/success/failed], devices[JSON], results[JSON], reportPath, startTime, endTime, summary[JSON]）
-- [ ] OP03 - 设计 InspectionSchedule 模型（id, templateId, agentId, cronExpression, enabled, lastRunTime, lastRunStatus, createdAt, updatedAt）
-- [ ] OP04 - 设计 Notification 模型（id, userId, title, content, type[inspection/report/baseline/system], relatedRecordId, isRead, createdAt）
-- [ ] OP05 - 设计 BaselineDocument 模型（id, templateId, filePath, generatedAt, version, isActive）
-- [ ] OP06 - 在 Agent 模型中添加反向关联字段（records, schedules），编写数据库迁移脚本并应用
+- [x] OP01 - 设计 InspectionTemplate 模型（id, name, description, deviceType, commands[JSON], devices[JSON], createdAt, updatedAt）
+- [x] OP02 - 设计 InspectionRecord 模型（id, templateId, agentId, status[running/success/failed], devices[JSON], results[JSON], reportPath, startTime, endTime, summary[JSON]）
+- [x] OP03 - 设计 InspectionSchedule 模型（id, templateId, agentId, cronExpression, enabled, lastRunTime, lastRunStatus, createdAt, updatedAt）
+- [x] OP04 - 设计 Notification 模型（id, userId, title, content, type[inspection/report/baseline/system], relatedRecordId, isRead, createdAt）
+- [x] OP05 - 设计 BaselineDocument 模型（id, templateId, filePath, generatedAt, version, isActive）
+- [x] OP06 - 在 Agent 模型中添加反向关联字段（records, schedules），编写数据库迁移脚本并应用
 
 ### 后端 - 巡检模板管理
 
-- [ ] OP07 - 实现 GET /api/inspection/templates 模板列表接口
-- [ ] OP08 - 实现 POST /api/inspection/templates 创建模板接口
-- [ ] OP09 - 实现 PUT /api/inspection/templates/:id 更新模板接口
-- [ ] OP10 - 实现 DELETE /api/inspection/templates/:id 删除模板接口
+- [x] OP07 - 实现 GET /api/inspection/templates 模板列表接口
+- [x] OP08 - 实现 POST /api/inspection/templates 创建模板接口
+- [x] OP09 - 实现 PUT /api/inspection/templates/:id 更新模板接口
+- [x] OP10 - 实现 DELETE /api/inspection/templates/:id 删除模板接口
 
 ### 后端 - 巡检记录与报告
 
-- [ ] OP11 - 重构现有 POST /api/inspection 接口，巡检结果持久化到 InspectionRecord
-- [ ] OP12 - 实现 GET /api/inspection/records 巡检记录列表接口（分页、状态筛选）
-- [ ] OP13 - 实现 GET /api/inspection/records/:id 巡检记录详情接口
-- [ ] OP14 - 实现 reportGenerator.ts 报告生成服务（结构化 Markdown 报告）
+- [x] OP11 - 重构现有 POST /api/inspection 接口，巡检结果持久化到 InspectionRecord
+- [x] OP12 - 实现 GET /api/inspection/records 巡检记录列表接口（分页、状态筛选）
+- [x] OP13 - 实现 GET /api/inspection/records/:id 巡检记录详情接口
+- [x] OP14 - 实现 reportGenerator.ts 报告生成服务（结构化 Markdown 报告）
 
 ### 后端 - 定时任务调度
 
-- [ ] OP15 - 实现 scheduler.ts 定时任务调度服务（基于 node-cron）
-- [ ] OP16 - 实现 POST /api/inspection/schedules 创建定时任务接口
-- [ ] OP17 - 实现 PUT /api/inspection/schedules/:id 更新定时任务接口
-- [ ] OP18 - 实现 DELETE /api/inspection/schedules/:id 删除定时任务接口
-- [ ] OP19 - 实现 POST /api/inspection/schedules/:id/run 手动触发定时任务接口
-- [ ] OP20 - 实现定时任务启动时自动加载已有 enabled 任务
-- [ ] OP21 - 实现定时任务执行完毕后自动触发报告生成 + Agent 解析流程
+- [x] OP15 - 实现 scheduler.ts 定时任务调度服务（基于 node-cron）
+- [x] OP16 - 实现 POST /api/inspection/schedules 创建定时任务接口
+- [x] OP17 - 实现 PUT /api/inspection/schedules/:id 更新定时任务接口
+- [x] OP18 - 实现 DELETE /api/inspection/schedules/:id 删除定时任务接口
+- [x] OP19 - 实现 POST /api/inspection/schedules/:id/run 手动触发定时任务接口
+- [x] OP20 - 实现定时任务启动时自动加载已有 enabled 任务
+- [x] OP21 - 实现定时任务执行完毕后自动触发报告生成 + Agent 解析流程
 
 ### 后端 - Agent 报告解析与基线文档
 
-- [ ] OP22 - 实现 agentParser.ts Agent 报告解析服务（调用 DeepSeek API）
-- [ ] OP23 - 实现首次巡检完成时 Agent 生成基线文档（.md 文件写入 backend/data/baselines/）
-- [ ] OP24 - 实现 GET /api/inspection/baselines/:templateId 获取基线文档接口
-- [ ] OP25 - 实现 POST /api/inspection/baselines/:templateId/regenerate 重新生成基线接口
-- [ ] OP26 - 实现非首次巡检完成时 Agent 读取基线文档 + 分析当前报告 + 输出分析结果
+- [x] OP22 - 实现 agentParser.ts Agent 报告解析服务（调用 DeepSeek API）
+- [x] OP23 - 实现首次巡检完成时 Agent 生成基线文档（.md 文件写入 backend/data/baselines/）
+- [x] OP24 - 实现 GET /api/inspection/baselines/:templateId 获取基线文档接口
+- [x] OP25 - 实现 POST /api/inspection/baselines/:templateId/regenerate 重新生成基线接口
+- [x] OP26 - 实现非首次巡检完成时 Agent 读取基线文档 + 分析当前报告 + 输出分析结果
 
 ### 后端 - 站内信通知
 
-- [ ] OP27 - 新建 routes/notifications.ts 通知路由文件
-- [ ] OP28 - 实现 GET /api/notifications 通知列表接口（分页、未读筛选）
-- [ ] OP29 - 实现 PUT /api/notifications/:id/read 标记已读接口
-- [ ] OP30 - 实现 PUT /api/notifications/read-all 全部标记已读接口
-- [ ] OP31 - 实现 DELETE /api/notifications/:id 删除通知接口
-- [ ] OP32 - 实现 GET /api/notifications/unread-count 获取未读数量接口
-- [ ] OP33 - 实现 Agent 分析结果自动写入 Notification 表
+- [x] OP27 - 新建 routes/notifications.ts 通知路由文件
+- [x] OP28 - 实现 GET /api/notifications 通知列表接口（分页、未读筛选）
+- [x] OP29 - 实现 PUT /api/notifications/:id/read 标记已读接口
+- [x] OP30 - 实现 PUT /api/notifications/read-all 全部标记已读接口
+- [x] OP31 - 实现 DELETE /api/notifications/:id 删除通知接口
+- [x] OP32 - 实现 GET /api/notifications/unread-count 获取未读数量接口
+- [x] OP33 - 实现 Agent 分析结果自动写入 Notification 表
 
 ### 前端 - 巡检页面重构
 
-- [ ] OP34 - 新建 Inspection/index.tsx Tab 容器页面（即时巡检 / 巡检模板 / 历史报告 三个 Tab）
-- [ ] OP35 - 实现 InspectionNow.tsx 即时巡检 Tab（迁移现有 Inspection.tsx 功能，增加选择模板快速加载）
-- [ ] OP36 - 实现 TemplateManagement.tsx 模板管理 Tab（卡片式展示，新建/编辑/删除模板）
-- [ ] OP37 - 实现 HistoryReports.tsx 历史报告 Tab（记录表格，状态/时间筛选，查看报告详情）
-- [ ] OP38 - 新建 frontend/src/api/inspection.ts 巡检相关 API 封装
-- [ ] OP39 - 更新 App.tsx 路由，巡检页面指向新的 Tab 容器
-- [ ] OP40 - 实现巡检报告详情弹窗（展示 MD 报告 + Agent 分析结果）
+- [x] OP34 - 新建 Inspection/index.tsx Tab 容器页面（即时巡检 / 巡检模板 / 历史报告 三个 Tab）
+- [x] OP35 - 实现 InspectionNow.tsx 即时巡检 Tab（迁移现有 Inspection.tsx 功能，增加选择模板快速加载）
+- [x] OP36 - 实现 TemplateManagement.tsx 模板管理 Tab（卡片式展示，新建/编辑/删除模板）
+- [x] OP37 - 实现 HistoryReports.tsx 历史报告 Tab（记录表格，状态/时间筛选，查看报告详情）
+- [x] OP38 - 新建 frontend/src/api/inspection.ts 巡检相关 API 封装
+- [x] OP39 - 更新 App.tsx 路由，巡检页面指向新的 Tab 容器
+- [x] OP40 - 实现巡检报告详情弹窗（展示 MD 报告 + Agent 分析结果）
 
 ### 前端 - 站内信
 
-- [ ] OP41 - 新建 NotificationBell.tsx 顶部铃铛图标组件（Badge 未读数 + Drawer 下拉通知列表）
-- [ ] OP42 - 集成 NotificationBell 到 AppLayout.tsx 顶部导航栏
-- [ ] OP43 - 新建 Notifications.tsx 通知中心页面（表格展示、类型筛选、已读/未读筛选）
-- [ ] OP44 - 新建 frontend/src/api/notification.ts 通知相关 API 封装
-- [ ] OP45 - 实现通知中心中"设为新基线"操作按钮（调用 regenerate 接口）
-- [ ] OP46 - 更新 App.tsx 路由，新增通知中心路由
+- [x] OP41 - 新建 NotificationBell.tsx 顶部铃铛图标组件（Badge 未读数 + Drawer 下拉通知列表）
+- [x] OP42 - 集成 NotificationBell 到 AppLayout.tsx 顶部导航栏
+- [x] OP43 - 新建 Notifications.tsx 通知中心页面（表格展示、类型筛选、已读/未读筛选）
+- [x] OP44 - 新建 frontend/src/api/notification.ts 通知相关 API 封装
+- [x] OP45 - 实现通知中心中"设为新基线"操作按钮（调用 regenerate 接口）
+- [x] OP46 - 更新 App.tsx 路由，新增通知中心路由
 
 ---
 
@@ -399,23 +399,23 @@ frontend/
 
 ### 后端 - Agent 对话式巡检
 
-- [ ] OP47 - 实现自然语言解析巡检需求服务（用户描述 → 结构化模板参数：设备类型、命令、设备列表、频率）
-- [ ] OP48 - 实现聊天中识别巡检意图并自动创建模板（后端 skill/tool 扩展，新增 `create_inspection_template` 工具）
-- [ ] OP49 - 实现聊天中识别巡检意图并自动创建定时任务（关联模板 + agent + cron，新增 `create_inspection_schedule` 工具）
-- [ ] OP50 - 实现聊天确认流程后端接口（Agent 发出确认请求 → 用户回复确认 → 触发任务创建）
-- [ ] OP51 - 实现聊天消息与 Notification 的关联（任务创建确认结果推送通知）
+- [x] OP47 - 实现自然语言解析巡检需求服务（用户描述 → 结构化模板参数：设备类型、命令、设备列表、频率）
+- [x] OP48 - 实现聊天中识别巡检意图并自动创建模板（后端 skill/tool 扩展，新增 `create_inspection_template` 工具）
+- [x] OP49 - 实现聊天中识别巡检意图并自动创建定时任务（关联模板 + agent + cron，新增 `create_inspection_schedule` 工具）
+- [x] OP50 - 实现聊天确认流程后端接口（Agent 发出确认请求 → 用户回复确认 → 触发任务创建）
+- [x] OP51 - 实现聊天消息与 Notification 的关联（任务创建确认结果推送通知）
 
 ### 前端 - 聊天增强
 
-- [ ] OP52 - 实现聊天中巡检任务确认卡片组件（展示模板摘要 + 确认/取消按钮，自定义消息类型渲染）
-- [ ] OP53 - 实现确认后自动跳转至巡检模板/任务管理页面
-- [ ] OP54 - 实现聊天中展示巡检分析结果卡片（内联展示 Agent 分析摘要 + 查看详情链接）
+- [x] OP52 - 实现聊天中巡检任务确认卡片组件（展示模板摘要 + 确认/取消按钮，自定义消息类型渲染）
+- [x] OP53 - 实现确认后自动跳转至巡检模板/任务管理页面
+- [x] OP54 - 实现聊天中展示巡检分析结果卡片（内联展示 Agent 分析摘要 + 查看详情链接）
 
 ### 前端 - 定时任务管理
 
-- [ ] OP55 - 在 Inspection Tab 容器新增"定时任务"Tab
-- [ ] OP56 - 实现定时任务列表页面（展示 cron 表达式、关联模板、启用/禁用开关、手动触发按钮）
-- [ ] OP57 - 实现定时任务创建/编辑表单（选择模板、选择 Agent、设置 cron 表达式、启用状态）
+- [x] OP55 - 在 Inspection Tab 容器新增"定时任务"Tab
+- [x] OP56 - 实现定时任务列表页面（展示 cron 表达式、关联模板、启用/禁用开关、手动触发按钮）
+- [x] OP57 - 实现定时任务创建/编辑表单（选择模板、选择 Agent、设置 cron 表达式、启用状态）
 
 ---
 
@@ -425,18 +425,18 @@ frontend/
 
 | 状态 | 数量 |
 |:----:|-----:|
-| ✅ 已完成 | 0 |
-| ❌ 未完成 | **46** |
+| ✅ 已完成 | **39** |
+| ❌ 未完成 | 7 |
 | **总计** | **46** |
 
 ### 第二期
 
 | 状态 | 数量 |
 |:----:|-----:|
-| ✅ 已完成 | 0 |
-| ❌ 未完成 | **11** |
+| ✅ 已完成 | 11 |
+| ❌ 未完成 | 0 |
 | **总计** | **11** |
 
 ---
 
-**第一期完成度: 0%** | **第二期完成度: 0%** | **整体完成度: 0%**
+**第一期完成度: 85% (39/46)** | **第二期完成度: 100% (11/11)** | **整体完成度: 88% (50/57)**

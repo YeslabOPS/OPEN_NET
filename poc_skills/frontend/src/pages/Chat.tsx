@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Select, Input, Button, List, Card, Typography, Space, Spin, Alert, message, Tag, Collapse } from 'antd';
-import { SendOutlined, RobotOutlined, UserOutlined, ClearOutlined, ThunderboltOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { useParams } from 'react-router-dom';
+import { Select, Input, Button, List, Card, Typography, Space, Spin, Alert, message, Tag, Collapse, Modal } from 'antd';
+import { SendOutlined, RobotOutlined, UserOutlined, ClearOutlined, ThunderboltOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, ClockCircleOutlined, FileTextOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { useParams, useNavigate } from 'react-router-dom';
 import { agentApi } from '../api/agent';
 import { Agent } from '../api/agent';
 import apiClient from '../api';
@@ -19,6 +19,27 @@ interface ToolCall {
   timestamp: Date;
 }
 
+// 确认卡片类型 (OP52)
+interface ConfirmCard {
+  id: string;
+  type: 'create_template' | 'create_schedule' | 'run_inspection';
+  summary: string;
+  message: string;
+  data: any;
+}
+
+// 巡检分析结果卡片类型 (OP54)
+interface InspectionResultCard {
+  recordId: string;
+  status: 'running' | 'success' | 'failed';
+  summary: {
+    totalDevices: number;
+    successDevices: number;
+    failedDevices: number;
+    agentAnalysis?: string;
+  };
+}
+
 interface MessageItem {
   id: string;
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -27,10 +48,13 @@ interface MessageItem {
   toolCalls?: ToolCall[];
   hasToolCalls?: boolean;
   isStreaming?: boolean;
+  confirmCard?: ConfirmCard;
+  inspectionResult?: InspectionResultCard;
 }
 
 function Chat() {
   const { agentId } = useParams<{ agentId?: string }>();
+  const navigate = useNavigate();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [inputValue, setInputValue] = useState('');
@@ -39,6 +63,7 @@ function Chat() {
   const [agentLoading, setAgentLoading] = useState(true);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(true);
   const [availableTools, setAvailableTools] = useState<any[]>([]);
+  const [confirmLoading, setConfirmLoading] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const streamingContentRef = useRef<string>('');
@@ -329,6 +354,193 @@ function Chat() {
     );
   };
 
+  // 渲染确认卡片 (OP52)
+  const renderConfirmCard = (card: ConfirmCard, messageId: string) => {
+    const getCardTitle = () => {
+      switch (card.type) {
+        case 'create_template': return '创建巡检模板';
+        case 'create_schedule': return '创建定时任务';
+        case 'run_inspection': return '执行巡检任务';
+        default: return '确认操作';
+      }
+    };
+
+    const getCardIcon = () => {
+      switch (card.type) {
+        case 'create_template': return <FileTextOutlined />;
+        case 'create_schedule': return <ClockCircleOutlined />;
+        case 'run_inspection': return <ThunderboltOutlined />;
+        default: return <RobotOutlined />;
+      }
+    };
+
+    const getCardColor = () => {
+      switch (card.type) {
+        case 'create_template': return 'blue';
+        case 'create_schedule': return 'purple';
+        case 'run_inspection': return 'green';
+        default: return 'default';
+      }
+    };
+
+    const handleConfirm = async () => {
+      setConfirmLoading(card.id);
+      try {
+        const response = await apiClient.post('/inspection/chat-confirm', {
+          type: card.type,
+          data: card.data,
+        });
+
+        if (response.success) {
+          message.success(response.data?.message || '操作已确认');
+          // OP53: 确认后自动跳转
+          setTimeout(() => {
+            switch (card.type) {
+              case 'create_template':
+              case 'create_schedule':
+                navigate('/inspection');
+                break;
+              case 'run_inspection':
+                if (response.data?.result?.recordId) {
+                  navigate(`/inspection?recordId=${response.data.result.recordId}`);
+                } else {
+                  navigate('/inspection');
+                }
+                break;
+            }
+          }, 1500);
+        }
+      } catch (error: any) {
+        message.error(error.message || '操作失败');
+      } finally {
+        setConfirmLoading(null);
+      }
+    };
+
+    const handleCancel = () => {
+      message.info('已取消操作');
+    };
+
+    return (
+      <Card
+        size="small"
+        style={{
+          marginTop: 12,
+          border: '1px dashed #1890ff',
+          backgroundColor: '#f0f5ff',
+        }}
+        bodyStyle={{ padding: '12px 16px' }}
+      >
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          <Space>
+            <Tag color={getCardColor()} icon={getCardIcon()}>
+              {getCardTitle()}
+            </Tag>
+          </Space>
+          <div style={{ fontSize: 12 }}>
+            {card.summary.split('\n').map((line, i) => (
+              <div key={i} style={{ marginBottom: 2 }}>
+                {line}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: '#666' }}>
+            {card.message}
+          </div>
+          <Space style={{ marginTop: 8 }}>
+            <Button
+              type="primary"
+              size="small"
+              icon={<CheckCircleOutlined />}
+              onClick={handleConfirm}
+              loading={confirmLoading === card.id}
+            >
+              确认
+            </Button>
+            <Button
+              size="small"
+              danger
+              icon={<CloseCircleOutlined />}
+              onClick={handleCancel}
+              disabled={confirmLoading === card.id}
+            >
+              取消
+            </Button>
+          </Space>
+        </Space>
+      </Card>
+    );
+  };
+
+  // 渲染巡检分析结果卡片 (OP54)
+  const renderInspectionResultCard = (result: InspectionResultCard) => {
+    const getStatusColor = () => {
+      switch (result.status) {
+        case 'success': return 'success';
+        case 'failed': return 'error';
+        case 'running': return 'processing';
+        default: return 'default';
+      }
+    };
+
+    const getStatusText = () => {
+      switch (result.status) {
+        case 'success': return '巡检成功';
+        case 'failed': return '巡检失败';
+        case 'running': return '巡检中';
+        default: return '未知状态';
+      }
+    };
+
+    return (
+      <Card
+        size="small"
+        style={{
+          marginTop: 12,
+          border: '1px solid #52c41a',
+          backgroundColor: '#f6ffed',
+        }}
+        bodyStyle={{ padding: '12px 16px' }}
+      >
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
+          <Space>
+            <Tag color={getStatusColor()}>
+              {getStatusText()}
+            </Tag>
+            <Button
+              type="link"
+              size="small"
+              icon={<ArrowRightOutlined />}
+              onClick={() => navigate(`/inspection?recordId=${result.recordId}`)}
+            >
+              查看详情
+            </Button>
+          </Space>
+          <div style={{ fontSize: 12 }}>
+            <div>设备总数：{result.summary.totalDevices}</div>
+            <div>
+              <Text type="success">成功：{result.summary.successDevices}</Text>
+              {result.summary.failedDevices > 0 && (
+                <Text type="danger" style={{ marginLeft: 12 }}>失败：{result.summary.failedDevices}</Text>
+              )}
+            </div>
+          </div>
+          {result.summary.agentAnalysis && (
+            <div style={{ fontSize: 12, borderTop: '1px solid #d9d9d9', paddingTop: 8 }}>
+              <Text strong style={{ fontSize: 12 }}>Agent 分析：</Text>
+              <Paragraph
+                ellipsis={{ rows: 3, expandable: true, symbol: '展开' }}
+                style={{ marginBottom: 0, fontSize: 12 }}
+              >
+                {result.summary.agentAnalysis}
+              </Paragraph>
+            </div>
+          )}
+        </Space>
+      </Card>
+    );
+  };
+
   return (
     <div style={{ height: 'calc(100vh - 180px)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -375,6 +587,7 @@ function Chat() {
               <RobotOutlined style={{ fontSize: 64, marginBottom: 16 }} />
               <p>开始与 {currentAgent?.name || 'Agent'} 对话</p>
               <p style={{ fontSize: 12 }}>例如：帮我巡检 192.168.1.1 这台交换机</p>
+              <p style={{ fontSize: 12, marginTop: 8 }}>或：创建模板名为"核心交换机巡检"的定时任务，每天早上9点执行</p>
               {availableTools.length > 0 && (
                 <div style={{ marginTop: 16 }}>
                   <Text type="secondary" style={{ fontSize: 12 }}>可用工具：</Text>
@@ -431,6 +644,8 @@ function Chat() {
                       </div>
 
                       {item.role === 'assistant' && !item.isStreaming && renderToolCalls(item.toolCalls || [])}
+                      {item.confirmCard && !item.isStreaming && renderConfirmCard(item.confirmCard, item.id)}
+                      {item.inspectionResult && !item.isStreaming && renderInspectionResultCard(item.inspectionResult)}
                     </Space>
                   </Card>
                 </List.Item>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, Space, message, Divider, Spin } from 'antd';
 import { SaveOutlined, KeyOutlined, GlobalOutlined } from '@ant-design/icons';
-import { useConfigStore } from '../../stores/configStore';
+import { useConfigStore } from '../stores/configStore';
 
 const { Title, Text } = Typography;
 

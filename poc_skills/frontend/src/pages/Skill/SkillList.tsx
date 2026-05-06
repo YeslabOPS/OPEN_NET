@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Tag, Card, Typography, Modal, Form, Input, message, Upload, InputNumber, Divider, Descriptions, List, Collapse } from 'antd';
-import { PlusOutlined, EyeOutlined, DeleteOutlined, ToolOutlined, UploadOutlined, LinkOutlined, FileTextOutlined, CodeOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Tag, Card, Typography, Modal, message, Upload, Divider, Descriptions, Collapse } from 'antd';
+import { EyeOutlined, DeleteOutlined, ToolOutlined, UploadOutlined, LinkOutlined, FileTextOutlined, CodeOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { UploadProps, ColumnsType } from 'antd/es/table';
-import { skillApi, Skill, CreateSkillInput } from '../../api/skill';
+import { skillApi, Skill } from '../../api/skill';
 
 const { Title, Text, Paragraph } = Typography;
 const { Panel } = Collapse;
@@ -10,13 +10,11 @@ const { Panel } = Collapse;
 function SkillList() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(false);
-  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [importType, setImportType] = useState<'file' | 'url'>('file');
   const [importUrl, setImportUrl] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  const [form] = Form.useForm();
   const [detailData, setDetailData] = useState<any>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
@@ -62,25 +60,6 @@ function SkillList() {
         }
       },
     });
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      // 处理 tools 和 configurations 字段
-      const submitData: CreateSkillInput = {
-        ...values,
-        tools: values.tools ? JSON.stringify(values.tools) : undefined,
-        configurations: values.configurations ? JSON.stringify(values.configurations) : undefined,
-      };
-      await skillApi.create(submitData);
-      message.success('创建成功');
-      setCreateModalVisible(false);
-      form.resetFields();
-      loadSkills();
-    } catch {
-      message.error('创建失败');
-    }
   };
 
   const handleViewDetail = async (id: string) => {
@@ -253,11 +232,8 @@ function SkillList() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Title level={3}>Skill 管理</Title>
         <Space>
-          <Button icon={<UploadOutlined />} onClick={() => { setImportType('file'); setImportModalVisible(true); }}>
-            导入
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateModalVisible(true)}>
-            新建 Skill
+          <Button type="primary" icon={<UploadOutlined />} onClick={() => { setImportType('file'); setImportModalVisible(true); }}>
+            导入 Skill
           </Button>
         </Space>
       </div>
@@ -272,23 +248,6 @@ function SkillList() {
         />
       </Card>
 
-      {/* 新建 Skill Modal */}
-      <Modal title="新建 Skill" open={createModalVisible} onOk={handleSubmit} onCancel={() => { setCreateModalVisible(false); form.resetFields(); }} width={700}>
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item name="name" label="名称" rules={[{ required: true, message: '请输入名称' }]}>
-            <Input placeholder="skill-name" />
-          </Form.Item>
-          <Form.Item name="version" label="版本" rules={[{ required: true, message: '请输入版本' }]}>
-            <Input placeholder="1.0.0" />
-          </Form.Item>
-          <Form.Item name="author" label="作者" rules={[{ required: true, message: '请输入作者' }]}>
-            <Input placeholder="作者名称" />
-          </Form.Item>
-          <Form.Item name="description" label="描述" rules={[{ required: true, message: '请输入描述' }]}>
-            <Input.TextArea rows={2} placeholder="Skill 功能描述" />
-          </Form.Item>
-        </Form>
-      </Modal>
 
       {/* 导入 Modal */}
       <Modal

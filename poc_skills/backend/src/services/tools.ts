@@ -160,6 +160,34 @@ export class SSHConnection {
   }
 }
 
+/**
+ * 测试 SSH 连接
+ */
+export async function testSSHConnection(config: SSHConnectionConfig): Promise<{
+  success: boolean;
+  message: string;
+  latency?: number;
+}> {
+  const startTime = Date.now();
+  const ssh = new SSHConnection(config);
+
+  try {
+    await ssh.connect();
+    const latency = Date.now() - startTime;
+    ssh.disconnect();
+    return {
+      success: true,
+      message: 'SSH 连接成功',
+      latency,
+    };
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'SSH 连接失败',
+    };
+  }
+}
+
 // 工具注册表
 export interface ToolHandler {
   name: string;
@@ -497,5 +525,525 @@ export class ToolExecutor {
   }
 }
 
+// ============================================================
+// 巡检工具函数 (供 scheduler.ts 调用)
+// ============================================================
+
+import { DeviceInspectionResult, InspectionDevice } from './types.js';
+
+// 设备类型对应的巡检命令
+const INSPECTION_COMMANDS: Record<string, string[]> = {
+  switch: [
+    'display version',
+    'display device',
+    'display interface brief',
+    'display ip interface brief',
+    'display cpu-usage',
+    'display memory',
+    'display power',
+    'display fan',
+    'display logbuffer',
+  ],
+  router: [
+    'display version',
+    'display ip interface brief',
+    'display bgp summary',
+    'display ip routing-table',
+    'display cpu-usage',
+    'display memory',
+    'display logbuffer',
+  ],
+  firewall: [
+    'display version',
+    'display device',
+    'display interface',
+    'display firewall session table',
+    'display cpu-usage',
+    'display memory',
+    'display power',
+  ],
+  generic: [
+    'display version',
+    'display interface',
+    'display cpu-usage',
+    'display memory',
+  ],
+};
+
+/**
+ * 巡检单个设备
+ */
+export async function inspectDevice(device: InspectionDevice): Promise<DeviceInspectionResult> {
+  const deviceType = device.deviceType || 'generic';
+  const commands = device.customCommands || INSPECTION_COMMANDS[deviceType] || INSPECTION_COMMANDS.generic;
+
+  const result: DeviceInspectionResult = {
+    device: device.host,
+    deviceType,
+    success: false,
+    commands: [],
+    timestamp: new Date().toISOString(),
+  };
+
+  let conn: SSHConnection | null = null;
+
+  try {
+    conn = new SSHConnection({
+      host: device.host,
+      port: device.port || 22,
+      username: device.username,
+      password: device.password,
+      privateKey: device.privateKey,
+    });
+
+    await conn.connect();
+
+    // 依次执行巡检命令
+    for (const cmd of commands) {
+      try {
+        const cmdResult = await conn.executeCommand(cmd, 30000);
+        result.commands.push({
+          command: cmd,
+          stdout: cmdResult.stdout,
+          stderr: cmdResult.stderr,
+          exitCode: cmdResult.exitCode,
+          duration: cmdResult.duration,
+        });
+      } catch (cmdError: any) {
+        result.commands.push({
+          command: cmd,
+          stdout: '',
+          stderr: cmdError.message,
+          exitCode: -1,
+          duration: 0,
+        });
+      }
+    }
+
+    result.success = result.commands.every(c => c.exitCode === 0);
+  } catch (error: any) {
+    result.error = error.message;
+  } finally {
+    if (conn) {
+      conn.disconnect();
+    }
+  }
+
+  return result;
+}
+
 // 单例导出
 export const toolExecutor = new ToolExecutor();
+
+// ============================================================
+// 巡检意图解析工具 (OP47)
+// ============================================================
+
+export interface ParsedInspectionIntent {
+  intent: 'create_template' | 'create_schedule' | 'run_inspection' | 'query';
+  deviceType?: 'switch' | 'router' | 'firewall' | 'generic';
+  templateName?: string;
+  devices?: Array<{
+    host: string;
+    port?: number;
+    username: string;
+    password?: string;
+  }>;
+  commands?: string[];
+  cronExpression?: string;
+  cronDescription?: string;
+  agentId?: string;
+  rawQuery: string;
+  confidence: number;
+}
+
+/**
+ * 解析用户自然语言巡检需求 (OP47)
+ */
+export async function parseInspectionIntent(query: string): Promise<ParsedInspectionIntent> {
+  // 这里可以调用 LLM 进行解析，为了简单起见使用规则匹配
+  const lowerQuery = query.toLowerCase();
+
+  // 定时任务关键词
+  const scheduleKeywords = ['每天', '每周', '每月', '定时', '自动', 'schedule', 'cron', 'periodic'];
+  const isScheduleIntent = scheduleKeywords.some(k => lowerQuery.includes(k));
+
+  // 设备类型关键词
+  let deviceType: 'switch' | 'router' | 'firewall' | 'generic' = 'generic';
+  if (lowerQuery.includes('交换机') || lowerQuery.includes('switch')) {
+    deviceType = 'switch';
+  } else if (lowerQuery.includes('路由器') || lowerQuery.includes('router')) {
+    deviceType = 'router';
+  } else if (lowerQuery.includes('防火墙') || lowerQuery.includes('firewall')) {
+    deviceType = 'firewall';
+  }
+
+  // 解析 IP 地址
+  const ipRegex = /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
+  const ipMatches = query.match(ipRegex) || [];
+
+  // 解析 cron 表达式
+  let cronExpression: string | undefined;
+  const cronRegex = /\b(\d+)\s*点|每[天周月]?\s*(\d+)|(\d+)\s*:\s*(\d+)/g;
+  const cronMatch = query.match(cronRegex);
+  if (cronMatch) {
+    if (lowerQuery.includes('每天') || lowerQuery.includes('daily')) {
+      cronExpression = '0 9 * * *'; // 每天 9 点
+    } else if (lowerQuery.includes('每周') || lowerQuery.includes('weekly')) {
+      cronExpression = '0 9 * * 1'; // 每周一 9 点
+    } else if (lowerQuery.includes('每月') || lowerQuery.includes('monthly')) {
+      cronExpression = '0 9 1 * *'; // 每月 1 号 9 点
+    }
+  }
+
+  // 解析模板名称
+  let templateName: string | undefined;
+  const nameMatch = query.match(/(?:模板名为?|叫|名称)[：:\s]*([^\s，,。]+)/i);
+  if (nameMatch) {
+    templateName = nameMatch[1];
+  }
+
+  // 确定意图类型
+  let intent: ParsedInspectionIntent['intent'] = 'query';
+  let confidence = 0.5;
+
+  if (isScheduleIntent) {
+    intent = 'create_schedule';
+    confidence = 0.8;
+  } else if (ipMatches.length > 0 || lowerQuery.includes('巡检') || lowerQuery.includes('检查')) {
+    intent = 'run_inspection';
+    confidence = 0.7;
+  } else if (templateName || lowerQuery.includes('创建模板')) {
+    intent = 'create_template';
+    confidence = 0.7;
+  }
+
+  // 构建返回结果
+  const devices = ipMatches.slice(0, 5).map((host, index) => ({
+    host,
+    username: 'admin', // 默认用户名
+  }));
+
+  return {
+    intent,
+    deviceType,
+    templateName,
+    devices: devices.length > 0 ? devices : undefined,
+    cronExpression,
+    rawQuery: query,
+    confidence,
+  };
+}
+
+// ============================================================
+// 创建巡检模板工具 (OP48)
+// ============================================================
+
+interface CreateInspectionTemplateParams {
+  name: string;
+  description?: string;
+  deviceType: 'switch' | 'router' | 'firewall' | 'generic';
+  commands?: string[];
+  devices?: Array<{
+    host: string;
+    port?: number;
+    username: string;
+    password?: string;
+  }>;
+}
+
+// 预设命令模板
+const PRESET_COMMANDS: Record<string, string[]> = {
+  switch: [
+    'display version',
+    'display device',
+    'display interface brief',
+    'display ip interface brief',
+    'display cpu-usage',
+    'display memory',
+    'display power',
+    'display fan',
+    'display logbuffer',
+  ],
+  router: [
+    'display version',
+    'display ip interface brief',
+    'display bgp summary',
+    'display ip routing-table',
+    'display cpu-usage',
+    'display memory',
+    'display logbuffer',
+  ],
+  firewall: [
+    'display version',
+    'display device',
+    'display interface',
+    'display firewall session table',
+    'display cpu-usage',
+    'display memory',
+    'display power',
+  ],
+  generic: [
+    'display version',
+    'display interface',
+    'display cpu-usage',
+    'display memory',
+  ],
+};
+
+// 导入 prisma（延迟导入避免循环依赖）
+let _prisma: any = null;
+async function getPrisma() {
+  if (!_prisma) {
+    const { prisma } = await import('../lib/prisma.js');
+    _prisma = prisma;
+  }
+  return _prisma;
+}
+
+// ============================================================
+// 注册聊天集成工具 (OP48-OP49)
+// ============================================================
+
+// 导入 scheduler（延迟导入避免循环依赖）
+let _scheduler: any = null;
+async function getScheduler() {
+  if (!_scheduler) {
+    try {
+      const { scheduleInspection } = await import('./scheduler.js');
+      _scheduler = { scheduleInspection };
+    } catch {
+      _scheduler = {};
+    }
+  }
+  return _scheduler;
+}
+
+// 注册创建巡检模板工具
+toolExecutor.register({
+  name: 'create_inspection_template',
+  description: '创建巡检模板，用于后续巡检任务。可用于用户说"创建巡检模板"、"新建模板"等场景。',
+  parameters: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: '模板名称' },
+      description: { type: 'string', description: '模板描述（可选）' },
+      deviceType: {
+        type: 'string',
+        description: '设备类型',
+        enum: ['switch', 'router', 'firewall', 'generic'],
+        default: 'generic',
+      },
+      commands: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '巡检命令列表（可选，默认使用设备类型的预设命令）',
+      },
+      devices: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            host: { type: 'string', description: '设备 IP 地址' },
+            port: { type: 'number', description: 'SSH 端口（可选，默认 22）' },
+            username: { type: 'string', description: '登录用户名' },
+            password: { type: 'string', description: '登录密码（可选）' },
+          },
+          required: ['host', 'username'],
+        },
+        description: '预设设备列表（可选）',
+      },
+    },
+    required: ['name', 'deviceType'],
+  },
+  execute: async (params: CreateInspectionTemplateParams) => {
+    try {
+      const prisma = await getPrisma();
+
+      const commands = params.commands || PRESET_COMMANDS[params.deviceType] || PRESET_COMMANDS.generic;
+
+      const template = await prisma.inspectionTemplate.create({
+        data: {
+          name: params.name,
+          description: params.description || '',
+          deviceType: params.deviceType,
+          commands: JSON.stringify(commands),
+          devices: JSON.stringify(params.devices || []),
+        },
+      });
+
+      return {
+        success: true,
+        template: {
+          id: template.id,
+          name: template.name,
+          description: template.description,
+          deviceType: template.deviceType,
+          commands: commands,
+          devices: params.devices || [],
+        },
+        message: `已创建巡检模板「${params.name}」，包含 ${commands.length} 条巡检命令${params.devices ? `和 ${params.devices.length} 台设备` : ''}。`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `创建模板失败: ${error.message}`,
+      };
+    }
+  },
+});
+
+// 注册创建定时任务工具
+toolExecutor.register({
+  name: 'create_inspection_schedule',
+  description: '创建定时巡检任务。可用于用户说"设置定时巡检"、"创建定时任务"等场景。',
+  parameters: {
+    type: 'object',
+    properties: {
+      templateId: { type: 'string', description: '巡检模板 ID（可选，如果提供则使用该模板）' },
+      agentId: { type: 'string', description: 'Agent ID' },
+      cronExpression: {
+        type: 'string',
+        description: 'Cron 表达式，如 "0 9 * * *"（每天 9 点）、"0 9 * * 1"（每周一 9 点）',
+      },
+      cronDescription: { type: 'string', description: 'Cron 表达式的中文描述（可选）' },
+      templateName: { type: 'string', description: '模板名称（可选，用于查找或创建模板）' },
+      deviceType: {
+        type: 'string',
+        description: '设备类型（当 templateId 为空时使用）',
+        enum: ['switch', 'router', 'firewall', 'generic'],
+      },
+      devices: {
+        type: 'array',
+        items: { type: 'object', properties: { host: { type: 'string' }, username: { type: 'string' }, password: { type: 'string' } } },
+        description: '设备列表（当 templateId 为空时使用）',
+      },
+      enabled: { type: 'boolean', description: '是否启用，默认 true' },
+    },
+    required: ['agentId', 'cronExpression'],
+  },
+  execute: async (params: {
+    templateId?: string;
+    agentId: string;
+    cronExpression: string;
+    cronDescription?: string;
+    templateName?: string;
+    deviceType?: string;
+    devices?: Array<{ host: string; username: string; password?: string }>;
+    enabled?: boolean;
+  }) => {
+    try {
+      const prisma = await getPrisma();
+
+      // 如果没有提供 templateId，尝试查找或创建模板
+      let templateId = params.templateId;
+
+      if (!templateId) {
+        // 查找同名模板
+        if (params.templateName) {
+          const existing = await prisma.inspectionTemplate.findFirst({
+            where: { name: params.templateName },
+          });
+          if (existing) {
+            templateId = existing.id;
+          }
+        }
+
+        // 如果仍未找到，创建临时模板
+        if (!templateId) {
+          const templateName = params.templateName || `临时模板_${Date.now()}`;
+          const deviceType = (params.deviceType as any) || 'generic';
+          const commands = PRESET_COMMANDS[deviceType] || PRESET_COMMANDS.generic;
+
+          const newTemplate = await prisma.inspectionTemplate.create({
+            data: {
+              name: templateName,
+              description: '通过聊天自动创建',
+              deviceType,
+              commands: JSON.stringify(commands),
+              devices: JSON.stringify(params.devices || []),
+            },
+          });
+          templateId = newTemplate.id;
+        }
+      }
+
+      // 创建定时任务
+      const schedule = await prisma.inspectionSchedule.create({
+        data: {
+          templateId,
+          agentId: params.agentId,
+          cronExpression: params.cronExpression,
+          enabled: params.enabled !== false,
+        },
+      });
+
+      // 启动调度器
+      const scheduler = await getScheduler();
+      if (scheduler?.scheduleInspection && schedule.enabled) {
+        scheduler.scheduleInspection(schedule);
+      }
+
+      const description = params.cronDescription || params.cronExpression;
+
+      return {
+        success: true,
+        schedule: {
+          id: schedule.id,
+          templateId: schedule.templateId,
+          cronExpression: schedule.cronExpression,
+          enabled: schedule.enabled,
+        },
+        message: `已创建定时巡检任务，执行周期：${description}。`,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `创建定时任务失败: ${error.message}`,
+      };
+    }
+  },
+});
+
+// 注册获取模板列表工具
+toolExecutor.register({
+  name: 'get_inspection_templates',
+  description: '获取所有巡检模板列表，包括模板 ID、名称、描述等信息。',
+  parameters: {
+    type: 'object',
+    properties: {},
+  },
+  execute: async () => {
+    try {
+      const prisma = await getPrisma();
+      const templates = await prisma.inspectionTemplate.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: { records: true, schedules: true },
+          },
+        },
+      });
+
+      return {
+        success: true,
+        templates: templates.map(t => ({
+          id: t.id,
+          name: t.name,
+          description: t.description,
+          deviceType: t.deviceType,
+          commands: JSON.parse(t.commands || '[]'),
+          devices: JSON.parse(t.devices || '[]'),
+          recordCount: t._count.records,
+          scheduleCount: t._count.schedules,
+          createdAt: t.createdAt,
+        })),
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `获取模板列表失败: ${error.message}`,
+      };
+    }
+  },
+});

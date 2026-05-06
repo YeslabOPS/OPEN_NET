@@ -6,11 +6,13 @@ import {
   MessageOutlined,
   SettingOutlined,
   ThunderboltOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import type { MenuProps } from 'antd';
+import NotificationBell from '../NotificationBell';
 
-const { Sider, Content } = Layout;
+const { Sider, Header, Content } = Layout;
 const { Title } = Typography;
 
 const menuItems: MenuProps['items'] = [
@@ -33,6 +35,11 @@ const menuItems: MenuProps['items'] = [
     key: '/inspection',
     icon: <ThunderboltOutlined />,
     label: '批量巡检',
+  },
+  {
+    key: '/notifications',
+    icon: <BellOutlined />,
+    label: '通知中心',
   },
   {
     key: '/chat',
@@ -94,6 +101,9 @@ function AppLayout() {
         />
       </Sider>
       <Layout>
+        <Header style={{ background: '#fff', padding: '0 16px', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+          <NotificationBell />
+        </Header>
         <Content style={{ margin: '16px' }}>
           <div
             style={{

@@ -1,54 +1,93 @@
+import { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Typography, Space } from 'antd';
 import {
   RobotOutlined,
   ToolOutlined,
   MessageOutlined,
   RiseOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 
 const { Title } = Typography;
 
+interface DashboardStats {
+  agentCount: number;
+  skillCount: number;
+  conversationCount: number;
+  messageCount: number;
+  inspectionCount: number;
+  unreadNotificationCount: number;
+}
+
 function Dashboard() {
+  const [stats, setStats] = useState<DashboardStats>({
+    agentCount: 0,
+    skillCount: 0,
+    conversationCount: 0,
+    messageCount: 0,
+    inspectionCount: 0,
+    unreadNotificationCount: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/stats/dashboard');
+        const result = await response.json();
+        if (result.success) {
+          setStats(result.data);
+        }
+      } catch (error) {
+        console.error('获取统计数据失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   return (
     <div>
       <Title level={3}>仪表盘</Title>
 
       <Row gutter={16} style={{ marginTop: 24 }}>
         <Col span={6}>
-          <Card>
+          <Card loading={loading}>
             <Statistic
               title="Agent 数量"
-              value={0}
+              value={stats.agentCount}
               prefix={<RobotOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card loading={loading}>
             <Statistic
               title="Skill 数量"
-              value={1}
+              value={stats.skillCount}
               prefix={<ToolOutlined />}
               valueStyle={{ color: '#52c41a' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card loading={loading}>
             <Statistic
               title="对话次数"
-              value={0}
+              value={stats.conversationCount}
               prefix={<MessageOutlined />}
               valueStyle={{ color: '#722ed1' }}
             />
           </Card>
         </Col>
         <Col span={6}>
-          <Card>
+          <Card loading={loading}>
             <Statistic
-              title="API 调用"
-              value={0}
+              title="巡检次数"
+              value={stats.inspectionCount}
               prefix={<RiseOutlined />}
               valueStyle={{ color: '#fa8c16' }}
             />
@@ -57,8 +96,18 @@ function Dashboard() {
       </Row>
 
       <Row gutter={16} style={{ marginTop: 24 }}>
-        <Col span={24}>
-          <Card title="快速开始">
+        <Col span={6}>
+          <Card loading={loading}>
+            <Statistic
+              title="未读通知"
+              value={stats.unreadNotificationCount}
+              prefix={<BellOutlined />}
+              valueStyle={{ color: '#f5222d' }}
+            />
+          </Card>
+        </Col>
+        <Col span={18}>
+          <Card title="快速开始" loading={loading}>
             <Space direction="vertical" style={{ width: '100%' }}>
               <div>
                 <Title level={5}>欢迎使用 NetOps Agent Skills</Title>

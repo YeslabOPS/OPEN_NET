@@ -7,7 +7,8 @@ import AgentList from './pages/Agent/AgentList';
 import SkillList from './pages/Skill/SkillList';
 import Chat from './pages/Chat';
 import Settings from './pages/Settings';
-import Inspection from './pages/Inspection';
+import Inspection from './pages/Inspection/index';
+import Notifications from './pages/Notifications';
 
 const theme = {
   token: {
@@ -29,6 +30,7 @@ function App() {
               <Route path="agents" element={<AgentList />} />
               <Route path="skills" element={<SkillList />} />
               <Route path="inspection" element={<Inspection />} />
+              <Route path="notifications" element={<Notifications />} />
               <Route path="chat" element={<Chat />} />
               <Route path="chat/:agentId" element={<Chat />} />
               <Route path="settings" element={<Settings />} />

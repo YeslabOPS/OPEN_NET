@@ -28,13 +28,19 @@ apiClient.interceptors.response.use(
     // 如果是后端的统一响应格式 { success, data, error }
     if (data && typeof data === 'object' && 'success' in data) {
       if (!data.success) {
-        return Promise.reject(new Error(data.error || 'Request failed'));
+        const err: any = new Error(data.error || 'Request failed');
+        err.details = data.details;
+        return Promise.reject(err);
       }
       return data.data;
     }
     return data;
   },
   (error) => {
+    // 处理响应中的 details 信息
+    if (error.response?.data?.details) {
+      error.details = error.response.data.details;
+    }
     console.error('[API Error]', error.message);
     return Promise.reject(error);
   }
