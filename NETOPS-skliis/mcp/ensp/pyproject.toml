@@ -1,0 +1,17 @@
+[project]
+name = "ensp"
+version = "0.2.0"
+description = "eNSP MCP Server - Huawei network device management via MCP protocol"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "paramiko",
+    "chardet",
+]
+
+[build-system]
+requires = [ "hatchling",]
+build-backend = "hatchling.build"
+
+[project.scripts]
+ensp-mcp = "ensp.server:main"

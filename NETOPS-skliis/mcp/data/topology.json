@@ -1,0 +1,113 @@
+{
+  "version": "1.3.00.100",
+  "source_file": "F:\\4期IP\\录播\\备份\\NETOPS\\mcp\\..\\topos\\1223.topo",
+  "devices": [
+    {
+      "id": "5C2E00B3-D37C-4bbf-89A1-BA0B623076AF",
+      "name": "Cloud1",
+      "model": "Cloud",
+      "com_port": 0,
+      "system_mac": "",
+      "interfaces": {
+        "Ethernet": {
+          "type": "Ethernet",
+          "name": "GE",
+          "count": 2,
+          "prefix": "GigabitEthernet0/0/"
+        }
+      },
+      "device_type": "cloud",
+      "is_configurable": false
+    },
+    {
+      "id": "739EAA54-B0CB-440c-B5BC-55CAD5253812",
+      "name": "CE1",
+      "model": "CE12800",
+      "com_port": 2000,
+      "system_mac": "70-7B-E8-F5-36-BA",
+      "interfaces": {},
+      "device_type": "unknown",
+      "is_configurable": true
+    },
+    {
+      "id": "580C36C7-29D1-4fb0-9C59-08BDA6A724D1",
+      "name": "AR1",
+      "model": "AR2220",
+      "com_port": 2001,
+      "system_mac": "00-E0-FC-44-0E-6A",
+      "interfaces": {
+        "Ethernet": {
+          "type": "Ethernet",
+          "name": "GE",
+          "count": 2,
+          "prefix": "GigabitEthernet0/0/"
+        }
+      },
+      "device_type": "router",
+      "is_configurable": true
+    },
+    {
+      "id": "EE1D259E-8D93-427e-B233-1344D1A70154",
+      "name": "AR2",
+      "model": "AR2220",
+      "com_port": 2002,
+      "system_mac": "00-E0-FC-2A-3D-79",
+      "interfaces": {
+        "Ethernet": {
+          "type": "Ethernet",
+          "name": "GE",
+          "count": 2,
+          "prefix": "GigabitEthernet0/0/"
+        }
+      },
+      "device_type": "router",
+      "is_configurable": true
+    },
+    {
+      "id": "94F36D07-4B41-4e2f-B083-C5771C8500FE",
+      "name": "AR3",
+      "model": "AR2220",
+      "com_port": 2003,
+      "system_mac": "00-E0-FC-D3-64-39",
+      "interfaces": {
+        "Ethernet": {
+          "type": "Ethernet",
+          "name": "GE",
+          "count": 2,
+          "prefix": "GigabitEthernet0/0/"
+        }
+      },
+      "device_type": "router",
+      "is_configurable": true
+    }
+  ],
+  "connections": [
+    {
+      "device_a_id": "739EAA54-B0CB-440c-B5BC-55CAD5253812",
+      "device_b_id": "5C2E00B3-D37C-4bbf-89A1-BA0B623076AF",
+      "device_a_name": "CE1",
+      "device_b_name": "Cloud1",
+      "interface_a": "GE0/0/0",
+      "interface_b": "GigabitEthernet0/0/0"
+    },
+    {
+      "device_a_id": "580C36C7-29D1-4fb0-9C59-08BDA6A724D1",
+      "device_b_id": "EE1D259E-8D93-427e-B233-1344D1A70154",
+      "device_a_name": "AR1",
+      "device_b_name": "AR2",
+      "interface_a": "GigabitEthernet0/0/0",
+      "interface_b": "GigabitEthernet0/0/0"
+    },
+    {
+      "device_a_id": "EE1D259E-8D93-427e-B233-1344D1A70154",
+      "device_b_id": "94F36D07-4B41-4e2f-B083-C5771C8500FE",
+      "device_a_name": "AR2",
+      "device_b_name": "AR3",
+      "interface_a": "GigabitEthernet0/0/1",
+      "interface_b": "GigabitEthernet0/0/1"
+    }
+  ],
+  "device_count": 5,
+  "configurable_count": 4,
+  "cached_at": "2026-05-16T19:54:13.798772"
+}
