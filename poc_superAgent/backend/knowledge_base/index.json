@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "documents": [
+    {
+      "id": "network_inspection_guide",
+      "title": "网络设备巡检基础指南",
+      "path": "raw/docs/network_inspection_guide.md",
+      "compiled_path": "wiki/compiled/network_inspection_guide.md",
+      "compiled": false,
+      "created_at": "",
+      "tags": ["巡检", "网络设备", "运维"]
+    },
+    {
+      "id": "fault_troubleshooting",
+      "title": "常见网络故障排查手册",
+      "path": "raw/docs/fault_troubleshooting.md",
+      "compiled_path": "wiki/compiled/fault_troubleshooting.md",
+      "compiled": false,
+      "created_at": "",
+      "tags": ["故障排查", "网络", "运维"]
+    },
+    {
+      "id": "ospf_config_guide",
+      "title": "OSPF 路由协议配置指南",
+      "path": "raw/docs/ospf_config_guide.md",
+      "compiled_path": "wiki/compiled/ospf_config_guide.md",
+      "compiled": false,
+      "created_at": "",
+      "tags": ["OSPF", "路由协议", "配置"]
+    }
+  ]
+}

@@ -1,9 +1,11 @@
 """Super Agent 后端入口"""
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from config import settings
 from api import router
+from api.device_routes import router as device_router
 
 # 配置日志
 logging.basicConfig(
@@ -23,15 +25,35 @@ app = FastAPI(
 # 配置 CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应限制
+    allow_origins=["*"],  # 开发环境全放通
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 注册路由
-app.include_router(router)
 
+# ── 统一异常处理 ──
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全局异常处理"""
+    logger.error(f"Unhandled error on {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "服务器内部错误",
+            "detail": str(exc)[:200],
+        },
+    )
+
+
+# ── 路由注册 ──
+
+app.include_router(router)
+app.include_router(device_router)
+
+
+# ── 基础端点 ──
 
 @app.get("/")
 async def root():
@@ -40,6 +62,14 @@ async def root():
         "name": settings.app_name,
         "version": "0.1.0",
         "status": "running",
+        "endpoints": {
+            "agent": "/api/agent/chat",
+            "plan": "/api/agent/plan",
+            "stream": "/api/agent/stream",
+            "knowledge": "/api/agent/knowledge/list",
+            "devices": "/api/devices",
+            "health": "/health",
+        },
     }
 
 

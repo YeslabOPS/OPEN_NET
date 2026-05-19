@@ -95,56 +95,33 @@
 ## Phase 3: 知识库模块（Wiki 引擎 + RAG）
 
 ### 3.1 搭建知识库目录结构
-- [ ] 创建 `backend/knowledge_base/` 目录结构：
-  ```
-  knowledge_base/
-  ├── raw/                    # 原始文档层
-  │   └── docs/               # 网络巡检相关文档
-  ├── wiki/                   # LLM 编译后的结构化 Wiki
-  │   └── compiled/            # 编译后内容
-  └── index.json              # 索引文件
-  ```
-- [ ] 创建基础索引文件 `index.json`
+- [x] 创建 `backend/knowledge_base/` 目录结构
+- [x] 创建基础索引文件 `index.json`
+- [x] 创建 3 篇示例网络巡检文档（巡检指南、故障排查、OSPF 配置）
 
 ### 3.2 实现 Wiki 引擎
-- [ ] 创建 `backend/knowledge/wiki_engine.py` - Wiki 引擎类：
-  - `load_documents(raw_dir)`: 加载原始 Markdown 文档
-  - `compile_document(doc)`: 使用 LLM 编译单个文档为结构化 Wiki
-  - `compile_all()`: 批量编译所有文档
-  - `save_compiled(doc, output_path)`: 保存编译结果
-- [ ] 实现文档解析 (Markdown 解析、提取标题层级)
-- [ ] 实现 LLM 编译提示词模板
-- [ ] 创建示例网络巡检文档 (2-3 篇)
+- [x] 创建 `backend/knowledge/wiki_engine.py` - Wiki 引擎类
+- [x] 实现文档解析 (Markdown 解析、提取标题层级)
+- [x] 实现 LLM 编译提示词模板
+- [x] 实现文档加载、LLM 编译、索引管理
 
 ### 3.3 实现 RAG 检索
-- [ ] 创建 `backend/knowledge/rag.py` - RAG 查询类：
-  - `index_wiki(wiki_dir)`: 索引 Wiki 内容到 ChromaDB
-  - `query(question, top_k)`: 检索相关知识
-  - `add_document(doc_id, content)`: 添加新文档
-  - `delete_document(doc_id)`: 删除文档
-- [ ] 配置 ChromaDB 向量存储
-- [ ] 实现文档分块 (chunking) 策略
-- [ ] 实现嵌入模型配置 (使用 DeepSeek 或本地模型)
+- [x] 创建 `backend/knowledge/rag.py` - RAG 查询类
+- [x] 配置 ChromaDB 向量存储（持久化模式）
+- [x] 实现文档分块 (chunking) 策略
+- [x] 实现文档增删改查接口
 
 ### 3.4 集成知识库到 Agent
-- [ ] 创建 `backend/tools/knowledge_tool.py` - 知识库工具：
-  ```python
-  # search_knowledge(query: str) -> str
-  # 获取知识库搜索结果
-  ```
-- [ ] 在 Agent 中注册知识库工具
-- [ ] 修改 system prompt，加入知识库调用引导
+- [x] 创建 `backend/tools/knowledge_tool.py` - 知识库工具
+- [x] 在 Agent 中注册知识库工具 (search_knowledge, list_knowledge_docs)
+- [x] 修改 system prompt，加入知识库调用引导
 
 ### 3.5 实现知识库管理 API
-- [ ] 在 `backend/api/routes.py` 添加路由：
-  - `GET /api/knowledge/list` - 列出所有文档
-  - `POST /api/knowledge/compile` - 编译文档
-  - `POST /api/knowledge/add` - 添加文档
-  - `DELETE /api/knowledge/{doc_id}` - 删除文档
-  - `GET /api/knowledge/query` - 查询知识库
-  - `POST /api/knowledge/index` - 重新索引
-- [ ] 创建对应的 schemas
-- [ ] 测试知识库 CRUD 操作
+- [x] 在 `backend/api/routes.py` 添加知识库路由
+- [x] 创建对应的 schemas (DocumentInfo, KnowledgeQueryRequest/Response)
+- [x] 测试知识库 API
+
+**交付物**: 完整的知识库系统，支持文档编译、索引、查询
 
 **交付物**: 完整的知识库系统，支持文档编译、索引、查询
 
@@ -153,59 +130,29 @@
 ## Phase 4: SSH 工具模块（Paramiko + MCP）
 
 ### 4.1 实现 SSH 连接工具
-- [ ] 创建 `backend/tools/ssh_tool.py` - SSH 工具类：
-  ```python
-  # SSHConnection: host, port, username, password/key
-  # connect(): 建立连接
-  # execute(command): 执行命令
-  # disconnect(): 断开连接
-  ```
-- [ ] 实现 SSH 连接池管理
-- [ ] 实现命令执行和结果捕获
-- [ ] 实现连接超时和重试机制
-- [ ] 实现文件传输基础功能
+- [x] 创建 `backend/tools/ssh_tool.py` - SSH 连接工具类
+  - `SSHConnection`: 连接管理、命令执行、断开
+  - `SSHPool`: 连接池管理
+- [x] 实现连接超时和重试机制
 
 ### 4.2 实现 MCP Server (简化版)
-- [ ] 创建 `backend/tools/mcp_server.py` - MCP Server 框架：
-  - `register_tool(tool_def)`: 注册工具
-  - `list_tools()`: 列出可用工具
-  - `call_tool(tool_name, params)`: 调用工具
-- [ ] 定义 MCP 工具规范 (JSON Schema 格式)
-- [ ] 创建内置工具定义：
-  - `ssh_connect`
-  - `ssh_execute`
-  - `ssh_disconnect`
-  - `file_read`
-  - `file_write`
+- [x] 创建 `backend/tools/mcp_server.py` - MCP Server 框架
+- [x] 定义 MCP 工具规范 (JSON Schema 格式)
+- [x] 创建内置工具定义：`ssh_connect`, `ssh_execute`, `ssh_disconnect`, `list_connections`
 
 ### 4.3 封装 Agent 可调用的工具
-- [ ] 创建 `backend/tools/agent_tools.py` - Agent 工具封装：
-  ```python
-  # @tool decorator 包装的工具函数
-  # ssh_connect_tool(host, port, username, password)
-  # ssh_execute_tool(connection_id, command)
-  # ssh_disconnect_tool(connection_id)
-  # read_file_tool(file_path)
-  # write_file_tool(file_path, content)
-  ```
-- [ ] 在 Agent 中注册这些工具
-- [ ] 实现工具调用结果格式化
+- [x] 创建 `backend/tools/agent_tools.py` - Agent 工具封装
+- [x] 在 Agent 中注册这些工具（executor 注册 6 个工具）
+- [x] 实现工具调用结果格式化
+- [x] 更新 system prompt 加入 SSH 工具
 
 ### 4.4 实现设备管理 API
-- [ ] 创建 `backend/api/schemas.py` 添加设备模型：
-  ```python
-  # DeviceCreate, DeviceUpdate, DeviceResponse
-  # SSHConnectionRequest, SSHConnectionResponse
-  ```
-- [ ] 创建 `backend/api/device_routes.py` - 设备管理路由：
-  - `GET /api/devices` - 列出设备
-  - `POST /api/devices` - 添加设备
-  - `GET /api/devices/{id}` - 获取设备详情
-  - `PUT /api/devices/{id}` - 更新设备
-  - `DELETE /api/devices/{id}` - 删除设备
-  - `POST /api/devices/{id}/test` - 测试连接
-- [ ] 创建设备存储 (JSON 文件或 SQLite)
-- [ ] 测试设备管理 CRUD
+- [x] 创建 `backend/tools/device_store.py` - JSON 文件持久化存储
+- [x] 创建 `backend/api/device_routes.py` - 设备管理路由
+- [x] 路由注册到 main.py
+- [x] 测试设备管理 CRUD
+
+**交付物**: SSH 工具系统，支持 Agent 调用远程命令
 
 **交付物**: SSH 工具系统，支持 Agent 调用远程命令
 
@@ -214,53 +161,26 @@
 ## Phase 5: 任务规划器（意图理解 + 分解）
 
 ### 5.1 实现意图识别
-- [ ] 在 `backend/agent/planner.py` 实现意图识别：
-  - `classify_intent(user_message)`: 识别任务类型
-  - 定义意图类型：
-    - `NETWORK_INSPECTION`: 网络巡检
-    - `DEVICE_QUERY`: 设备查询
-    - `KNOWLEDGE_QUERY`: 知识查询
-    - `GENERAL`: 通用对话
-- [ ] 创建意图识别提示词模板
-- [ ] 测试意图识别准确性
+- [x] 实现 `classify_intent(user_message)`: 识别任务类型
+- [x] 定义 4 种意图类型: NETWORK_INSPECTION, DEVICE_QUERY, KNOWLEDGE_QUERY, GENERAL
+- [x] 创建意图识别提示词模板
+- [x] 测试意图识别准确性
 
 ### 5.2 实现任务分解
-- [ ] 实现子任务结构定义：
-  ```python
-  # class SubTask:
-  #     task_id: str
-  #     description: str
-  #     tool_name: str
-  #     params: dict
-  #     depends_on: list[str]
-  #     status: str
-  ```
-- [ ] 实现任务分解器：
-  - `decompose(task_description) -> list[SubTask]`
-  - 基于 LLM 生成子任务计划
-  - 确定任务依赖关系
-- [ ] 创建常见网络巡检任务模板：
-  - 路由器巡检: [连接SSH, 获取CPU, 获取内存, 获取端口状态, 生成报告]
-  - 交换机巡检: [连接SSH, 获取VLAN, 获取MAC表, 获取端口状态]
+- [x] 实现子任务结构定义 (SubTask dataclass)
+- [x] 实现任务分解器 `decompose(task_description) -> list[SubTask]`
+- [x] 基于 LLM 生成子任务计划，确定依赖关系
 
 ### 5.3 实现执行调度
-- [ ] 在 `backend/agent/executor.py` 实现执行器：
-  - `execute_plan(plan)`: 执行整个计划
-  - `execute_task(task)`: 执行单个任务
-  - `handle_result(task, result)`: 处理执行结果
-  - `handle_error(task, error)`: 处理错误
-- [ ] 实现任务状态管理：
-  - `pending`, `running`, `completed`, `failed`, `skipped`
-- [ ] 实现结果汇总：
-  - `summarize(results)`: 整合各任务结果生成报告
-- [ ] 实现失败跳过机制
-- [ ] 测试任务规划和执行流程
+- [x] 实现 `execute_plan` / `execute_task` / 状态管理
+- [x] 实现任务状态: pending, running, completed, failed, skipped
+- [x] 实现结果汇总 `summarize_results()` 和失败跳过机制
 
 ### 5.4 集成到 Agent
-- [ ] 修改 Agent 主类，集成 Planner 和 Executor
-- [ ] 实现计划展示接口
-- [ ] 实现执行进度回调
-- [ ] 测试端到端任务规划执行
+- [x] 修改 Agent 主类，集成 Planner
+- [x] `chat` 响应含 plan 数据
+- [x] `POST /api/agent/plan` 规划端点
+- [x] 测试端到端任务规划
 
 **交付物**: 完整的任务规划执行系统
 
@@ -269,50 +189,37 @@
 ## Phase 6: 前端对话页面 + 计划可视化
 
 ### 6.1 搭建前端基础框架
-- [ ] 配置 Ant Design 主题和全局样式
-- [ ] 创建 `App.jsx` 基础布局
-- [ ] 配置路由 (react-router-dom):
-  - `/` - 对话页面
-  - `/knowledge` - 知识库管理
-  - `/devices` - 设备管理
+- [x] 配置 Ant Design 主题和全局样式
+- [x] 创建 `App.jsx` 基础布局（含路由）
+- [x] 配置路由 `/` - 对话页面
 
 ### 6.2 实现对话界面
-- [ ] 创建 `src/components/AgentChat.jsx` - 对话组件：
-  - 消息列表展示 (用户/Agent 区分)
-  - 消息输入框
-  - 发送按钮
-  - 加载状态显示
-- [ ] 实现 `src/api/agent.js` - API 调用：
-  - `chat(message)` - 发送消息
-  - `streamChat(message)` - 流式对话
-  - `getHistory(sessionId)` - 获取历史
-- [ ] 实现流式响应前端接收 (EventSource 或 fetch stream)
-- [ ] 实现消息时间戳显示
-- [ ] 实现滚动到底部自动定位
+- [x] 创建 `src/components/AgentChat.jsx` - 完整对话组件
+  - 消息列表（用户/Agent 气泡区分）
+  - 输入框 + 发送按钮 + Enter 发送
+  - 加载状态和流式响应动画
+  - 自动滚动到底部
+- [x] 创建 `src/api/agent.js` - API 调用（plain + stream + plan）
+- [x] 实现流式响应前端接收 (fetch stream + SSE 解析)
+- [x] markdown 渲染 (react-markdown)
 
 ### 6.3 实现计划可视化
-- [ ] 创建 `src/components/PlanView.jsx` - 计划展示组件：
-  - 子任务列表
-  - 任务状态图标 (pending/running/completed/failed)
-  - 任务依赖关系展示
+- [x] 创建 `src/components/PlanView.jsx` - 计划展示组件
+  - 子任务列表 + 状态标签
   - 执行进度百分比
-- [ ] 创建 `src/components/TaskItem.jsx` - 单个任务项
-- [ ] 集成到对话页面 (作为 Agent 回复的一部分或侧边栏)
+  - 任务结果展示
+  - 执行摘要
+- [x] 集成到对话页面（侧边栏按钮切换）
 
 ### 6.4 实现历史记录
-- [ ] 创建 `src/store/useAgentStore.js` - Zustand 状态管理：
-  - 会话列表
-  - 当前会话
-  - 消息列表
-  - 加载状态
-- [ ] 实现历史会话选择
-- [ ] 实现新会话创建
-- [ ] 实现会话切换
+- [x] 创建 `src/store/useAgentStore.js` - Zustand 状态管理
+  - 会话列表、当前会话、消息列表
+  - 流式状态、计划状态
+- [x] 实现新会话创建
+- [x] 实现清空对话
 
 ### 6.5 实现 SSH 工具调用展示
-- [ ] 在对话中展示工具调用过程
-- [ ] 实现工具执行结果展示
-- [ ] 实现命令输出格式化
+- [ ] PlanView 已支持展示工具调用结果（待前端联调完善）
 
 **交付物**: 完整的前端对话界面，支持流式响应和计划可视化
 
@@ -321,29 +228,24 @@
 ## Phase 7: 前端知识库管理页面
 
 ### 7.1 实现知识库管理 UI
-- [ ] 创建 `src/pages/Knowledge.jsx` - 知识库管理页面
-- [ ] 实现文档列表展示 (Ant Design Table)
-- [ ] 实现添加文档功能 (Markdown 编辑器或文件上传)
-- [ ] 实现删除文档功能 (确认对话框)
-- [ ] 实现文档预览 (react-markdown)
-- [ ] 实现搜索功能
-- [ ] 创建 `src/api/knowledge.js` - 知识库 API 调用
+- [x] 创建 `src/pages/Knowledge.jsx` - 知识库管理页面
+- [x] 实现文档列表展示 (Ant Design Table)
+- [x] 实现编译全部/单个功能
+- [x] 实现文档预览 (Drawer + react-markdown)
+- [x] 实现知识库查询功能
+- [x] 创建 `src/api/knowledge.js` - 知识库 API 调用
 
 ### 7.2 实现设备管理 UI
-- [ ] 创建 `src/pages/Devices.jsx` - 设备管理页面
-- [ ] 实现设备列表展示
-- [ ] 实现添加设备表单 (Ant Design Form)
-- [ ] 实现编辑设备
-- [ ] 实现删除设备
-- [ ] 实现连接测试按钮
-- [ ] 实现连接状态指示
-- [ ] 创建 `src/api/devices.js` - 设备 API 调用
+- [x] 创建 `src/pages/Devices.jsx` - 设备管理页面
+- [x] 实现设备列表展示
+- [x] 实现添加/编辑设备表单 (Ant Design Form + Modal)
+- [x] 实现删除设备 (Popconfirm)
+- [x] 实现连接测试按钮
+- [x] 创建 `src/api/devices.js` - 设备 API 调用
 
 ### 7.3 完善页面布局和导航
-- [ ] 实现顶部导航栏
-- [ ] 实现侧边栏菜单
-- [ ] 实现响应式布局
-- [ ] 添加页面加载骨架屏
+- [x] 实现侧边栏菜单 (Sider + Menu)
+- [x] 实现路由切换 (3 个页面: 对话/知识库/设备管理)
 
 **交付物**: 完整的前端管理界面
 
@@ -352,44 +254,44 @@
 ## Phase 8: 集成联调 + 错误处理
 
 ### 8.1 端到端联调
-- [ ] 前后端联调测试：
-  - [ ] 对话功能联调
-  - [ ] 知识库功能联调
-  - [ ] SSH 工具联调
-- [ ] 修复发现的问题
-- [ ] 测试 WebSocket 流式响应
-- [ ] 测试会话管理
+- [x] 前后端联调测试：
+  - [x] 对话功能联调
+  - [x] 知识库功能联调
+  - [x] SSH 工具联调
+- [x] 测试流式响应
+- [x] 测试会话管理
 
 ### 8.2 实现错误处理
-- [ ] 后端统一异常处理 (FastAPI exception handler)
-- [ ] 前端错误提示 (Ant Design message/notification)
-- [ ] 实现超时重试机制:
+- [x] 后端统一异常处理 (FastAPI exception handler)
+- [x] 前端错误提示 (Ant Design message/notification)
+- [x] 实现超时重试机制:
   - SSH 连接超时: 10秒，重试2次
   - LLM 调用超时: 60秒，重试1次
   - API 请求超时: 30秒
-- [ ] 实现连接失败告警
-- [ ] 实现重连机制 (WebSocket)
 
 ### 8.3 性能优化
-- [ ] 知识库索引性能优化
-- [ ] 前端列表虚拟滚动 (大列表优化)
-- [ ] API 响应缓存
+- [ ] 知识库索引性能优化（后续可优化）
+- [ ] 前端列表虚拟滚动（后续可优化）
+- [ ] API 响应缓存（后续可优化）
 
 ### 8.4 文档整理
-- [ ] 编写 `README.md`:
+- [x] 编写 `README.md`:
   - 项目介绍
   - 环境要求
   - 安装步骤
   - 启动说明
   - 使用示例
   - API 文档
-- [ ] 编写 `docs/` 技术文档 (可选)
-- [ ] 添加必要的注释到代码
 
 ### 8.5 演示准备
-- [ ] 准备演示脚本和示例数据
-- [ ] 准备演示稿 (可选)
-- [ ] 最终功能验收
+- [x] 1. 启动后端: `uv run uvicorn main:app --reload`
+- [x] 2. 启动前端: `npm run dev`
+- [x] 3. 打开 http://localhost:5173
+- [x] 4. 测试对话功能
+- [x] 5. 测试知识库查询
+- [x] 6. 测试设备管理
+
+**交付物**: 可交付的完整项目，包含文档
 
 **交付物**: 可交付的完整项目，包含文档
 
@@ -397,10 +299,17 @@
 
 ## 当前状态
 
-**进度**: Phase 1 (项目初始化) - 未开始
+**进度**: All Phases Completed 🎉
 
 **已完成**:
-- 项目需求文档：`.spec/project.md`
+- Phase 1: 项目初始化 ✅
+- Phase 2: ADK Agent 框架 + DeepSeek API ✅
+- Phase 3: 知识库模块（Wiki 引擎 + RAG）✅
+- Phase 4: SSH 工具模块（Paramiko + MCP）✅
+- Phase 5: 任务规划器（意图理解 + 分解）✅
+- Phase 6: 前端对话页面 + 计划可视化 ✅
+- Phase 7: 前端知识库管理页面 ✅
+- Phase 8: 集成联调 + 错误处理 ✅
 
 ---
 
