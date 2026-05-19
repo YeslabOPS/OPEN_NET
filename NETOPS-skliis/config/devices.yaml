@@ -1,0 +1,27 @@
+devices:
+- description: updated by MCP test
+  device_type: huawei
+  host: 127.0.0.1
+  name: AR1
+  password: '1'
+  port: 2002
+  protocol: telnet
+  secret: ''
+  username: '12'
+- device_type: huawei
+  host: 127.0.0.1
+  name: AR2
+  password: '1'
+  port: 2003
+  protocol: telnet
+  username: '1'
+- device_type: huawei
+  host: 127.0.0.1
+  name: AR3
+  password: '1'
+  port: 2004
+  protocol: telnet
+  username: '1'
+global_settings:
+  timeout: 30
+  verbose: true
